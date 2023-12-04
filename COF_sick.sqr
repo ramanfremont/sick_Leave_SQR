@@ -1,6 +1,6 @@
 !***********************************************************************
-! COFBN202.SQR: Allocation of Non Accruable Sick Leave to temprary and 
-! and part time employeed hired by City of Fremont                     *
+! COFBN202.SQR: Allocation of Non Accruable Leave - Mgmt Leave in      *
+! Version 8                                                            *
 !***********************************************************************
 !***********************************************************************
 !                                                                      *
@@ -181,7 +181,7 @@ RC.OPRID
 RC.RUN_CNTL_ID
 RC.ACCRUAL_PROC_DT
 
-  Let $AccrPrcDt      = &RC.ACCRUAL_PROC_DT
+  Let $AccrPrcDt      =  '19-JUN-2023'!&RC.ACCRUAL_PROC_DT
  
    Do Get-Pay-Calendar
 
@@ -319,7 +319,7 @@ end-select
 
  Do Check-For-New-Fiscal-Year
 
- if $fiscal_year_exist = 'Y' and $Mode = 'FISCAL_YEAR' and $Invalid_Date = 'N'
+ if $fiscal_year_exist = 'Y' and $Invalid_Date = 'N' and $Mode = 'FISCAL_YEAR'
 	Do Process-Main
  else
    if $fiscal_year_exist <> 'Y'
@@ -330,6 +330,7 @@ end-select
  end-if
 
  if $Mode <> 'FISCAL_YEAR'
+     show 'Value of Mode : ' $Mode
      Print 'Invalid date for processing fiscal year non-accruable leave allocation.' (+2,) center
  else
    if $Invalid_Date = 'Y'
@@ -839,7 +840,7 @@ Begin-Select
 
 L.ACCRUAL_PROC_DT
 
-  Let $LastAccrualDt = &L.ACCRUAL_PROC_DT
+  Let $LastAccrualDt = '18-JUN-2023'!&L.ACCRUAL_PROC_DT
 FROM
 PS_LEAVE_PLAN_TBL L
  
@@ -968,7 +969,7 @@ Values
 end-sql
 
 If $Plntype <> '5W'                                        
-   Do Print-Data
+  Do Print-Data
 end-if	                                                  
 
 End-Procedure	!Actual-Insert-Leave-Accruals
@@ -1077,12 +1078,17 @@ Begin-Procedure Check-For-New-Fiscal-Year
 
   Let $end_date_FY_accrual_proc = $JUL1
   Do Format-DateTime($end_date_FY_accrual_proc, $enddate, {DEFYMD}, '', '')
+  !let $AccrPrcDt = '19-JUN-2023'
   Do Format-DateTime($AccrPrcDt, $acprc, {DEFYMD}, '', '')
 
   if $acprc >= $begdate and $acprc <= $enddate
     let $Mode = 'FISCAL_YEAR'
   else
     let $Mode = 'NOT_FISCAL_YEAR'
+      show 'ACPRC : ' $acprc
+      show 'AccrPrcDt : ' $acprc
+      show 'BEGDATE : ' $begdate
+      show 'ENDDATE : ' $enddate
   end-if
 
 !  Display $Mode
