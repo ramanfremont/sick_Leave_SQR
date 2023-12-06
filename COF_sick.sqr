@@ -1,85 +1,16 @@
 !***********************************************************************
-! COFBN202.SQR: Allocation of Non Accruable Leave - Mgmt Leave in      *
-! Version 8                                                            *
+! COFBN202.SQR: Allocation of Non Accruable Sick Leave to temprary and *
+! and part time employeed hired by City of Fremont. Any remaining bal  *
+! from the previous year will be removed and 40 hours will be frontloaded *
+! in their leave bucket.                                                           *
 !***********************************************************************
 !***********************************************************************
 !                                                                      *
-! Author:   Dorothy Hinze                                              *
-! Date:     08/26/02                                                   *
+! Author:   Ramanpreet Bhatia                                              *
+! Date:     12/04/23                                                   *
 !                                                                      *
 !***********************************************************************
-!                                                                      *
-! PROGRAM DESCRIPTION:                                                 *
-! -------------------                                                  *
-! This program will be used to allocate non-accruable leave to mgmt    *
-! employees at the beginning of the fiscal year...any remaining bal    *
-! from the previous year will be removed. It will also allocate the    *
-! floating holiday to non-mgmt employees and remove any previous bal   * 
-!                                                                      *
-! Modified by Dorothy Hinze V8.3     DH060704                          *
-! Date: 06/07/04                                                       *
-! Changed accrual rate for modified employees to prorate based on      * 
-! standard hours - used #ModifyPCT calculation - also added new        *
-! paygroup UME for Unrepresented Management Employees                  *
-!
-! Modified by C.Easter CE070505
-! Date: 07/05/05
-! Separate Paygroups FAM & SA for processing
-!
-! By: C.Easter   CE051106
-! Date: 05/11/06
-! Reason: add INSERT-COMPLEAV-TBL procedure
-!
-! Modified by Florence Garcia fvg080607
-! Date: 08/16/07
-! Reason: Lorie wants sorted from paygroup > deptid> name to 
-! paygroup> name.
-!
-! By: C.Easter   CE090209
-! Date: 09/02/09
-! Reason: Fix logic - didnt work if there was only one CURRENT row 
-!         of intervals, but previous dates had multiple rows.
-!
-! By: Florence 
-! Date: 06302010
-! Reason: Removed CE090209 as it did not generate leave accruals for
-!         majority.
-!
-!Modified by: Florence fvg05102011
-!Description: 91 upgrade object changes:
-!	        NAMES - no effect
-!
-!By:  Chi 
-!Date: 070816
-!Per Payroll, removed TMR
-!Hard-code date 06/26/2016 in COFVDSP
-!
-!
-!By:  Upama UO07122017
-!Date: 07122017
-!Hard-code date 06/25/2017 in COFLVDSP
-!
-!By:  Vishy VC07032018
-!Date: 07032018
-!Hard-code date 06/24/2018 in COFLVDSP
-!
-!By:  Upama UO07032019
-!Date: 07032019
-!Hard-code date 06/23/2019 in COFLVDSP
-!
-!
-!By:  Upama U02020
-!During COVID-19, balance remaing from FY 19/20 is being transferred to FY 20/21
-!Hard-code date 06/21/2020 in COFLVDSP
-!
-!By:  Upama UO2021
-!Hard-code date 06/20/2020 in COFLVDSP
-!
-!By:  Upama UO2022
-!Hard-code date 06/20/2020 in COFLVDSP
-!By:  Chi Chi2023
-!Hard-code date 06/18/2023 in COFLVDSP
-!***********************************************************************
+!**********************************************************************
 !Do not forget to update COFLVDSP.SQR with the date used here.
 !***********************************************************************
 !***********************************************************************
@@ -233,12 +164,6 @@ TO_CHAR(PC.PAY_END_DT,'YYYY') &CURRENT_YEAR
 
 FROM PS_PAY_CALENDAR PC
 WHERE PC.PAY_CONFIRM_RUN = 'Y'
-!AND PC.PAY_END_DT = '25-JUN-2016'			! 7/14/2016 processed after confirm for 7/9/2016
-!AND PC.PAY_END_DT = '24-JUN-2017' !UO07122017
-!AND PC.PAY_END_DT = '23-JUN-2018' !VC07032018
-!AND PC.PAY_END_DT = '22-JUN-2019'  !UO07032019
-!AND PC.PAY_END_DT = '20-JUN-2020' !UO2020 - need to update to jun 20th 2020
-!AND PC.PAY_END_DT = '19-JUN-2021' !UO2021 - need to update to June 19th for prod
 !AND PC.PAY_END_DT = '18-JUN-2022' !UO2022 - need to update to June 18th for prod, the date must be previous Pay end date.
 AND PC.PAY_END_DT = '17-JUN-2023' !Chi2023 - 
  ! AND PC.PAY_END_DT = (SELECT MAX(PPC.PAY_END_DT)
@@ -248,13 +173,6 @@ AND PC.PAY_END_DT = '17-JUN-2023' !Chi2023 -
   AND PC.PAYGROUP NOT IN ('RET','MCC') 
 
 end-select
-
-!Let #Month  = &MONTH
-!Let #ResetMonth  = &RMONTH			! CE020101
-!Let #Period = &PC.PAY_PERIOD
-
-!   Show '     Month of last Confirm = ' #Month
-!   Show '           Period of Month = '#Period
 
 end-procedure	!Get-Pay-Calendar
 
@@ -268,31 +186,15 @@ let $Invalid_Date = 'N'
 let #current_month = &RMONTH
   Show 'Current month ' &RMONTH
 
-if #current_month >= 7 and #current_month <= 12 !upama - need to change to >=7 it was 6 for testing in june !UO2020
-	let #next_year  = &CURRENT_YEAR
-	let #next_year  = #next_year + 1
-	let $next_year  = #next_year
-	let $next_year2 = substr($next_year,1,4)
+	let $beginning_of_leave_grant = '01-JAN-' || &CURRENT_YEAR
+	let $end_of_leave_grant       = '31-DEC-' || &CURRENT_YEAR
+	let $month_year               = '12-' || &CURRENT_YEAR
+	let $end_of_begin             = '01-DEC-' || &CURRENT_YEAR      
 
-	let $beginning_of_fiscal_year = '01-JUL-' || &CURRENT_YEAR
-	let $end_of_fiscal_year       = '30-JUN-' || $next_year2
-	let $month_year               = '06-' || $next_year2
-	let $end_of_begin             = '01-JUN-' || $next_year2      
-else
-	let #prior_year  = &CURRENT_YEAR
-	let #prior_year  = #prior_year - 1
-	let $prior_year  = #prior_year
-	let $prior_year2 = substr($prior_year,1,4)
-
-	let $beginning_of_fiscal_year = '01-JUL-' || $prior_year2
-	let $end_of_fiscal_year       = '30-JUN-' || &CURRENT_YEAR
-	let $month_year               = '06-' || &CURRENT_YEAR
-	let $end_of_begin             = '01-JUN-' || &CURRENT_YEAR    
-end-if
 
 display ' '
-show 'BEGINNING OF FISCAL YEAR: ' $beginning_of_fiscal_year
-show 'END OF FISCAL YEAR      : ' $end_of_fiscal_year
+show 'BEGINNING OF LEAVE GRANT YEAR: ' $beginning_of_leave_grant
+show 'END OF LEAVE GRANT YEAR      : ' $end_of_leave_grant
 
 !show '$Month_year             : ' $Month_year
 
@@ -308,7 +210,7 @@ MAX(TO_CHAR(CHK_CAL.PAY_END_DT,'MM-YYYY')) &CHK_CAL.PAY_END_DT
 
 FROM PS_PAY_CALENDAR CHK_CAL 
 
-WHERE CHK_CAL.PAY_END_DT <= $end_of_fiscal_year
+WHERE CHK_CAL.PAY_END_DT <= $end_of_leave_grant
   AND CHK_CAL.PAY_END_DT >= $end_of_begin
 
 end-select
@@ -358,7 +260,8 @@ J.EFFDT
 TO_CHAR(J.EFFDT,'YYYY') &EFFDT_YEAR  
 J.PAYGROUP  
 J.DEPTID    
-J.COMPANY   
+J.COMPANY
+J.REG_TEMP   
 J.STD_HOURS 
 J.HOURLY_RT 
 N.NAME					!fvg081607
@@ -367,16 +270,17 @@ N.NAME					!fvg081607
 	Let #Emplrcd   = &J.EMPL_RCD
 	Let $Paygroup  = &J.PAYGROUP
 	Let $Company   = &J.COMPANY
+  Let $RegTemp   = &J.REG_TEMP
 	Let $DeptId    = &J.DEPTID
 	Let #StdHrs    = &J.STD_HOURS
 	LEt #hourly_rt = &J.HOURLY_RT 
-        Let $Name      = &N.NAME		!fvg081607
+        Let $Name      = &N.NAME
 	
 !        	Show '' 
 !	Show '                    EmplID = ' $Emplid
 !	Show '                Empl Rcd # = ' #Emplrcd
 !	Show '                  Paygroup = ' $Paygroup
-	
+! 	
    Do Reset-Accrual-Variables 	
    Do Get-FTE-Status
 !   Do Get-Personal-Data		!fvg081607
@@ -385,34 +289,35 @@ N.NAME					!fvg081607
 
    Let #Empcount = #Empcount + 1
 
- FROM PS_JOB J, PS_NAMES N		!fvg081607
-!WHERE J.EMPL_STATUS <> 'T'                      !KAM100200 - original code
-WHERE J.EMPL_STATUS not in ('L','Q','R','S','T','U','V')
+FROM 
+    PS_JOB J
+JOIN 
+    PS_NAMES N ON J.EMPLID = N.EMPLID
+WHERE REG_TEMP = 'T' AND J.COMPANY = 'COF'
 !  AND J.PAYGROUP = 'IAF'				! CE042501 to run one paygroup
  ! AND J.EMPLID = '11862'   !Used to run one employee				!CE101001 
   AND J.EFFDT  = (SELECT MAX(A_ED.EFFDT)
                     FROM PS_JOB A_ED
                    WHERE J.EMPLID     = A_ED.EMPLID
                      AND J.EMPL_RCD  = A_ED.EMPL_RCD
-                     AND A_ED.EFFDT  <= $AccrPrcDt)
+                     AND A_ED.EFFDT  <= '19-JUN-2023')
   AND J.EFFSEQ = (SELECT MAX(A_ES.EFFSEQ)
                     FROM PS_JOB A_ES
                    WHERE J.EMPLID    = A_ES.EMPLID
                      AND J.EMPL_RCD = A_ES.EMPL_RCD
                      AND J.EFFDT     = A_ES.EFFDT)
-  AND J.COMPANY = 'COF'					!fvg081607
+  !AND J.COMPANY = 'COF'					!fvg081607
   AND J.EMPLID = N.EMPLID				!fvg081607
   AND   N.NAME_TYPE = 'PRI'					!fvg081607	  
-  AND   N.EFFDT = (SELECT MAX(N_ED.EFFDT) FROM PS_NAMES N_ED	!fvg081607
-                 WHERE N.EMPLID = N_ED.EMPLID			!fvg081607
-                 AND N.NAME_TYPE = N_ED.NAME_TYPE		!fvg081607	
-                 AND N_ED.EFFDT <= $AccrPrcDt)  		!fvg081607	
-!ORDER BY J.PAYGROUP, J.DEPTID, J.EMPLID, J.EMPL_RCD		!fvg081607
-ORDER BY J.PAYGROUP, N.NAME					!fvg081607
+  AND   N.EFFDT = (SELECT MAX(N_ED.EFFDT) FROM PS_NAMES N_ED	
+                 WHERE N.EMPLID = N_ED.EMPLID			
+                 AND N.NAME_TYPE = N_ED.NAME_TYPE		
+                 AND N_ED.EFFDT <= '19-JUN-2023')  			
+ORDER BY J.PAYGROUP, N.NAME					
 
 end-select
 
-Do Update-Leave-Plan-Table			! Take this out for testing
+!Do Update-Leave-Plan-Table			! Take this out for testing
 
 Display #Empcount
 
@@ -502,6 +407,7 @@ end-if
 end-procedure	!Get-FTE-Status
 
 
+
 !***********************************************************************
 Begin-Procedure Reset-Accrual-Variables
 !***********************************************************************
@@ -541,8 +447,13 @@ Begin-Procedure Reset-Accrual-Variables
 end-procedure	!Reset-Accrual-Variables
 
 !***********************************************************************
-Begin-Procedure Get-Plan-Type-Order
+Begin-Procedure Get-Plan-Type-Order 
 !***********************************************************************
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
 
     Let $Invalid_Date = 'N'
 
@@ -666,7 +577,11 @@ end-procedure 	!Get-Plan-Type-Order
 !***********************************************************************
 Begin-Procedure Get-Benefit-Plan
 !***********************************************************************
-
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
     !--------------------------------------------------------------------
     !--This is used to determine the benefit plan for the specified     -
     !--plan type.  This routine is called several times from several    -
@@ -706,7 +621,11 @@ end-procedure    !Get-Benefit-Plan
 !***********************************************************************
 Begin-Procedure Get-Service-Hrs
 !***********************************************************************
-
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
 
 Do Get-Service-Hrs-If-Row-Exists        !KAM100200
     !--------------------------------------------------------------------
@@ -796,7 +715,11 @@ Begin-Procedure Get-Accrual-Rate
     !--This is used to get the accrual rate from the LEAVE_PLAN_TBL     -
     !--based on the benefit plan.
     !--------------------------------------------------------------------
-
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
 
 Begin-Select
 
@@ -834,7 +757,11 @@ Begin-Procedure Select-Leave-Plan-Date
     !--------------------------------------------------------------------
     !--Select last Accrual Process Date used before this update 
     !--------------------------------------------------------------------
-
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
 
 Begin-Select
 
@@ -868,7 +795,11 @@ end-procedure	!Select-Leave-Plan-Date
 !***********************************************************************
 Begin-Procedure Check-Accrual-Date
 !***********************************************************************
-
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
 let $row_exists = 'N'
 
 begin-Select
@@ -924,7 +855,11 @@ end-procedure
 !***********************************************************************
 Begin-Procedure Actual-Insert-Leave-Accrual
 !***********************************************************************
-
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
 
 Begin-SQL
 
@@ -1006,7 +941,11 @@ Begin-Procedure Check-Comp-Plan
     !--Check Comp-Leav-Tbl to see if row exists with balance for      
     !--Plan. If row exists update, else display emplid                       
     !-------------------------------------------------------------------  
-
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
    Let $Planexist = 'N'
 
 BEGIN-SELECT                                                             
@@ -1035,7 +974,11 @@ End-Procedure Check-Comp-Plan
 !***********************************************************************
 Begin-Procedure INSERT-COMPLEAV-TBL                   ! CE051106             
 !***********************************************************************
-
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
 BEGIN-SQL
 
 INSERT INTO PS_TL_COMPLEAV_TBL
@@ -1105,7 +1048,11 @@ Begin-Procedure Get-NAF-Carryover-Balance
     ! Calculates current leave balance. Calculates Adjustment amt to    
     ! zero out the balance
     !--------------------------------------------------------------------
-
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
 Let $NAFOldDt        = ''
 let $NAFoldDt_Validated = 'N'                                 
 
@@ -1224,7 +1171,11 @@ Begin-Procedure Update-Leave-Plan-Table
     !--prior to anything used before. This code replicates the          -
     !--delivered functionality                                          -
     !--------------------------------------------------------------------
-
+!We do not need this too- RAMAN*******************
+!
+! RAMAN
+!
+!*************************************************
 
 begin-sql
 

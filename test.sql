@@ -8,10 +8,12 @@ SELECT
     J.EMPLID,    
     J.EMPL_RCD,
     J.EFFDT,
-    /* TO_CHAR(J.EFFDT,'YYYY') AS EFFDT_YEAR  RAMAN */
+    /*TO_CHAR(J.EFFDT,'YYYY') AS EFFDT_YEAR  RAMAN */
     J.PAYGROUP,  
     J.DEPTID,    
-    J.COMPANY,   
+    J.COMPANY,
+    J.REG_TEMP,
+    /*J.FULL_PART_TIME,*/
     J.STD_HOURS,
     J.HOURLY_RT, 
     N.NAME					
@@ -20,8 +22,7 @@ FROM
 JOIN 
     PS_NAMES N ON J.EMPLID = N.EMPLID
 WHERE 
-    J.EMPL_STATUS = 'T' AND J.COMPANY = 'COF'
-    /*WHERE J.EMPL_STATUS NOT IN ('L','Q','R','S','T','U','V') */  
+    J.REG_TEMP = 'T' AND J.COMPANY = 'COF'
     AND J.EFFDT  = (SELECT MAX(A_ED.EFFDT)
                     FROM PS_JOB A_ED
                    WHERE J.EMPLID     = A_ED.EMPLID
@@ -31,9 +32,8 @@ WHERE
                     FROM PS_JOB A_ES
                    WHERE J.EMPLID    = A_ES.EMPLID
                      AND J.EMPL_RCD = A_ES.EMPL_RCD
-                     AND J.EFFDT     = A_ES.EFFDT)
-    /*AND J.COMPANY = 'COF'			
-    AND N.NAME_TYPE = 'PRI'		*/			  
+                     AND J.EFFDT     = A_ES.EFFDT)		
+    AND N.NAME_TYPE = 'PRI'			  
     AND N.EFFDT = (SELECT MAX(N_ED.EFFDT) FROM PS_NAMES N_ED	
                  WHERE N.EMPLID = N_ED.EMPLID		
                  AND N.NAME_TYPE = N_ED.NAME_TYPE	
@@ -41,14 +41,15 @@ WHERE
 ORDER BY 
     J.PAYGROUP, N.NAME;
 
+
 /* General command
 SELECT * 
 FROM PS_NAMES;
-
-
-SELECT *
-FROM PS_JOB A_ED;
 */
+
+SELECT REG_TEMP = 'T' and FULL_PART_TIME = 'P'
+FROM PS_JOB A_ED;
+
 
 
 end-select
