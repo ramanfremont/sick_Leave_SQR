@@ -54,7 +54,7 @@ Print 'Empl Name'       (,+2,25)
 Print 'Plan Type'       (,+2,9)
 Print 'Ben Plan'        (,+2,8)
 Print 'Prior Bal'       (,+2,12)
-Print 'Accrued'	      (,+2,7)
+Print 'Employee Type'	      (,+2,7)
 Print '  New Bal'		(,+2,12)
 print '-'               (+1,10,128)fill
 
@@ -68,13 +68,13 @@ begin-procedure Print-Data
 Print $Paygroup         (+1,10,8)
 Print $Deptid           (,+2,10)
 Print $Emplid           (,+2,11)
-Print #EmplRcd          (,+2,8)		edit 9
+Print #EmplRcd          (,+2,8)		
 Print $Name             (,+9,25)
 Print $Plntype          (,+2,9)
 Print $Benpln           (,+2,8)
-Print #OldLvBal         (,+2,12)	edit 99,999.99
-Print #Accrl            (,+6,7)  	edit 999.99
-Print #NewBal           (,+2,12)	edit 99,999.99
+Print #OldLvBal         (,+2,12)	
+Print $RegTemp            (,+6,7)  	
+Print #NewBal           (,+2,12)	
 
 end-procedure	!Print-Data
 
@@ -248,8 +248,7 @@ begin-procedure Process-Main
 !***********************************************************************
 
     !--------------------------------------------------------------------
-    !--Selects info from Job, most specifically Paygroup.  Paygroup will-
-    !--control the order in which accruals happen.                      -
+    !--Selects info from PS_Job, to show up on the report.          -
     !--------------------------------------------------------------------
 
 Begin-Select
