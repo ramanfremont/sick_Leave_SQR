@@ -16,32 +16,57 @@ SELECT
     /*J.FULL_PART_TIME,*/
     J.STD_HOURS,
     J.HOURLY_RT, 
-    N.NAME					
+    N.NAME,					
+    LP.PLAN_TYPE,
+    LP.BENEFIT_PLAN
 FROM 
     PS_JOB J
 JOIN 
     PS_NAMES N ON J.EMPLID = N.EMPLID
+JOIN
+    PS_LEAVE_PLAN LP ON J.EMPLID = LP.EMPLID
 WHERE 
-    J.REG_TEMP = 'T' AND J.COMPANY = 'COF'
+    J.REG_TEMP = 'T' 
+    AND J.COMPANY = 'COF'
+    AND LP.BENEFIT_PLAN = 'CASICK' 
+    AND LP.PLAN_TYPE = '50'
     AND J.EFFDT  = (SELECT MAX(A_ED.EFFDT)
                     FROM PS_JOB A_ED
-                   WHERE J.EMPLID     = A_ED.EMPLID
-                     AND J.EMPL_RCD  = A_ED.EMPL_RCD
-                     AND A_ED.EFFDT  <= '11-OCT-02') /*added date removed variable*/
+                    WHERE J.EMPLID     = A_ED.EMPLID
+                      AND J.EMPL_RCD  = A_ED.EMPL_RCD
+                      AND A_ED.EFFDT  <= '11-OCT-02') /* Uncomment or modify this line if needed */
     AND J.EFFSEQ = (SELECT MAX(A_ES.EFFSEQ)
                     FROM PS_JOB A_ES
-                   WHERE J.EMPLID    = A_ES.EMPLID
-                     AND J.EMPL_RCD = A_ES.EMPL_RCD
-                     AND J.EFFDT     = A_ES.EFFDT)		
+                    WHERE J.EMPLID    = A_ES.EMPLID
+                      AND J.EMPL_RCD = A_ES.EMPL_RCD
+                      AND J.EFFDT     = A_ES.EFFDT)		
     AND N.NAME_TYPE = 'PRI'			  
     AND N.EFFDT = (SELECT MAX(N_ED.EFFDT) FROM PS_NAMES N_ED	
-                 WHERE N.EMPLID = N_ED.EMPLID		
-                 AND N.NAME_TYPE = N_ED.NAME_TYPE	
-                 AND N_ED.EFFDT <= '11-OCT-02')  	/*added date removed variable*/
+                   WHERE N.EMPLID = N_ED.EMPLID		
+                   AND N.NAME_TYPE = N_ED.NAME_TYPE	
+                   AND N_ED.EFFDT <= '11-OCT-02')  	/* Uncomment or modify this line if needed */
 ORDER BY 
     J.PAYGROUP, N.NAME;
 
+---------------------------------------------------------------------------------------------------
+Select
 
+LP.EMPLID,
+LP.EMPL_RCD,
+LP.PLAN_TYPE,
+LP.BENEFIT_PLAN  
+
+	--Let	$Benpln  = &LP.BENEFIT_PLAN
+--     Display 'Benefit Plan should go here'
+
+From PS_LEAVE_PLAN LP
+JOIN
+   PS_LEAVE_PLAN ED ON LP.EMPLID = ED.EMPLID
+                           And LP.EMPL_RCD      = ED.EMPL_RCD
+                           And LP.PLAN_TYPE      = ED.PLAN_TYPE
+                           And LP.BENEFIT_NBR       = ED.BENEFIT_NBR
+                           And ED.EFFDT       <= $AccrPrcDt
+                           And LP.COVERAGE_ELECT = 'E')
 /* General command
 SELECT * 
 FROM PS_NAMES;
@@ -49,14 +74,26 @@ FROM PS_NAMES;
 
 SELECT REG_TEMP = 'T' and FULL_PART_TIME = 'P'
 FROM PS_JOB A_ED;
-
+/*
 SELECT * 
 FROM PS_LEAVE_RATE_TBL LRT
 WHERE BENEFIT_PLAN = 'CASICK' AND PLAN_TYPE = '50'
 
+SELECT *
+FROM PS_JOB A_ED;
+*/
+
+SELECT * 
+FROM PS_LEAVE_PLAN LP
+JOIN 
+    PS_JOB J ON J.EMPLID = LP.EMPLID
+WHERE
+  BENEFIT_PLAN = 'CASICK' AND PLAN_TYPE = '50';
+
+
 SELECT COLUMN_NAME, DATA_TYPE 
-FROM ALL_TAB_COLUMNS 
-WHERE TABLE_NAME = 'PS_LEAVE_RATE_TBL' AND COLUMN_NAME = 'PLAN_TYPE';
+FROM PS_LEAVE_PLAN LP
+WHERE COLUMN_NAME = 'BENEFIT_PLAN' AND COLUMN_NAME = 'PLAN_TYPE';
 
 end-select
 
